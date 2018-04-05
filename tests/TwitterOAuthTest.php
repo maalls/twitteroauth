@@ -251,6 +251,33 @@ class TwitterOAuthTest extends \PHPUnit_Framework_TestCase
         return $result;
     }
 
+
+    public function testDirectMessageEventNew()
+    {
+
+        $profile = $this->twitter->get("account/verify_credentials");
+        $parameters = [
+            "event" => [
+                "type" => "message_create",
+                "message_create" => [
+                    "target" => [
+                        "recipient_id" => $profile->id_str
+                    ],
+                    "message_data" => [
+                        "text" => "Hello Me! " . time(),
+                    ]
+                ]
+            ]
+        ];
+        $result = $this->twitter->post('direct_messages/events/new', $parameters);
+        $this->assertEquals("message_create", $result->event->type);
+        if($result->event->id) {
+            $rsp = $this->twitter->delete('direct_messages/events/destroy', ["id" => $result->event->id]);
+            $this->assertEquals(204, $this->twitter->getLastHttpCode());
+        }
+
+    }
+
     /**
      * @depends testPostStatusesUpdateUtf8
      */

@@ -312,6 +312,50 @@ class TwitterOAuth extends Config
             'command' => 'FINALIZE',
             'media_id' => $init->media_id_string
         ]);
+        
+        // Status check
+        $status = $this->checkMediaChunkedStatus($finalize);
+
+        return $status;
+    }
+
+    /**
+     * Private method to check the upload status until it succeed.
+     * Twitter docs: https://developer.twitter.com/en/docs/media/upload-media/api-reference/get-media-upload-status
+     *
+     * @param array  $finalize
+     *
+     * @return array
+     * @throws TwitterOAuthException
+     */
+    private function checkMediaChunkedStatus($finalize)
+    {
+        if(isset($finalize->processing_info)) {
+            sleep($finalize->processing_info->check_after_secs);
+            do {
+               $status = $this->http("GET", self::UPLOAD_HOST, "media/upload", [
+                    'command' => 'STATUS',
+                    'media_id' => $finalize->media_id_string
+                ]);
+                if(isset($status->errors)) {
+
+                    return $status;
+
+                }
+                switch($status->processing_info->state) {
+                    case "failed": 
+                        return $status;
+                    case "in_progress":
+                        sleep($status->processing_info->check_after_secs);
+                        break;
+                    case "succeeded":
+                        break;
+                    default:
+                        throw new TwitterOAuthException("Unexpected /media/upload STATUS state: " . $$status->processing_info->state);
+                }
+            }
+            while($status->processing_info->state != "succeeded");
+        }
         return $finalize;
     }
 

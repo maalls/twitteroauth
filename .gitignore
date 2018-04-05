@@ -2,3 +2,4 @@
 composer.lock
 vendor
 env
+tests/video_large.mp4

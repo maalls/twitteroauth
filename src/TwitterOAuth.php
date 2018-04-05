@@ -403,7 +403,7 @@ class TwitterOAuth extends Config
      */
     private function oAuthRequest($url, $method, array $parameters)
     {
-        $request = Request::fromConsumerAndToken($this->consumer, $this->token, $method, $url, $parameters);
+        $request = Request::fromConsumerAndToken($this->consumer, $this->token, $method, $url, $method == "GET" ? $parameters : []);
         if (array_key_exists('oauth_callback', $parameters)) {
             // Twitter doesn't like oauth_callback as a parameter.
             unset($parameters['oauth_callback']);
@@ -481,7 +481,13 @@ class TwitterOAuth extends Config
                 break;
             case 'POST':
                 $options[CURLOPT_POST] = true;
-                $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
+                if($this->requiresJsonRequest($url)) {
+                    $options[CURLOPT_HTTPHEADER][] = 'Content-type: application/json';
+                    $options[CURLOPT_POSTFIELDS] = json_encode($postfields);
+                }
+                else {
+                    $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
+                }
                 break;
             case 'DELETE':
                 $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
@@ -494,8 +500,6 @@ class TwitterOAuth extends Config
         if (in_array($method, ['GET', 'PUT', 'DELETE']) && !empty($postfields)) {
             $options[CURLOPT_URL] .= '?' . Util::buildHttpQuery($postfields);
         }
-
-
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, $options);
         $response = curl_exec($curlHandle);
@@ -514,6 +518,11 @@ class TwitterOAuth extends Config
         curl_close($curlHandle);
 
         return $responseBody;
+    }
+
+    private function requiresJsonRequest($url)
+    {
+        return preg_match('@/direct_messages/events/@', $url);
     }
 
     /**

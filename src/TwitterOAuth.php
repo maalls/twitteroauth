@@ -403,7 +403,7 @@ class TwitterOAuth extends Config
      */
     private function oAuthRequest($url, $method, array $parameters)
     {
-        $request = Request::fromConsumerAndToken($this->consumer, $this->token, $method, $url, $method == "GET" ? $parameters : []);
+        $request = Request::fromConsumerAndToken($this->consumer, $this->token, $method, $url, $this->requiresJsonRequest($url) && $method == "POST" ? []: $parameters);
         if (array_key_exists('oauth_callback', $parameters)) {
             // Twitter doesn't like oauth_callback as a parameter.
             unset($parameters['oauth_callback']);

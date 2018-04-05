@@ -312,7 +312,6 @@ class TwitterOAuth extends Config
             'command' => 'FINALIZE',
             'media_id' => $init->media_id_string
         ]);
-        
         // Status check
         $status = $this->checkMediaChunkedStatus($finalize);
 
